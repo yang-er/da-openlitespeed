@@ -6,9 +6,9 @@ if(!$data) die('He He');
 foreach($data as $domain => $ext) {
 	$write = "
 docRoot                   \$VH_ROOT/public_html
-adminEmails               ".$ext['ServerAdmin']."
-enableGzip                ".($ext['enableGZIP']?1:0)."
-enableIpGeo               ".($ext['enableGeoIP']?1:0)."
+adminEmails               ".$ext->ServerAdmin."
+enableGzip                ".($ext->enableGZIP?1:0)."
+enableIpGeo               ".($ext->enableGeoIP?1:0)."
 
 errorlog /var/log/httpd/domains/".$domain.".error.log {
   useServer               0
@@ -29,34 +29,34 @@ index  {
   autoIndex               0
 }
 ";
-	if($ext['error_400'])
+	if($ext->error_400)
 		$write .= "
 errorpage 400 {
-  url                     ".$ext['error_400']."
+  url                     ".$ext->error_400."
 }
 ";
-	if($ext['error_401'])
+	if($ext->error_401)
 		$write .= "
 errorpage 401 {
-  url                     ".$ext['error_401']."
+  url                     ".$ext->error_401."
 }
 ";
-	if($ext['error_403'])
+	if($ext->error_403)
 		$write .= "
 errorpage 403 {
-  url                     ".$ext['error_403']."
+  url                     ".$ext->error_403."
 }
 ";
-	if($ext['error_404'])
+	if($ext->error_404)
 		$write .= "
 errorpage 404 {
-  url                     ".$ext['error_404']."
+  url                     ".$ext->error_404."
 }
 ";
-	if($ext['error_500'])
+	if($ext->error_500)
 		$write .= "
 errorpage 500 {
-  url                     ".$ext['error_500']."
+  url                     ".$ext->error_500."
 }
 ";
 	$write .= "
@@ -102,17 +102,17 @@ accessControl  {
   enableIpGeo             1
 }
 */
-	if($ext['rewrite_engine_on'])
+	if($ext->rewrite_engine_on)
 		$write .= "
 rewrite  {
   enable                  1
   rules                   <<<END_rules
-".$ext['rewrite_config']."
+".$ext->rewrite_config."
   END_rules
 }
 
 ";
-	@file_put_contents('/usr/local/lsws/conf/vhosts/'.$ext['user'].'_'.$ext['domain'].'.conf', $write);
+	@file_put_contents('/usr/local/lsws/conf/vhosts/'.$ext->user.'_'.$ext->domain.'.conf', $write);
 	@exec('/etc/init.d/lsws restart');
 	@print($write);
 }
