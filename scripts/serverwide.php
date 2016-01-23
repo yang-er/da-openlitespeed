@@ -4,10 +4,10 @@ $port_80 = 8088;
 $port_443 = 8089;
 $listener_binding = '4';
 
-$lsws_config_file = '
-#
+$lsws_config_file = '#
 # PLAIN TEXT CONFIGURATION FILE WRITTEN BY DA-OLS
 #
+
 serverName                lshttpd
 user                      apache
 group                     apache
@@ -17,7 +17,7 @@ swappingDir               /tmp/lshttpd/swap
 autoFix503                1
 gracefulRestartTimeout    300
 mime                      $SERVER_ROOT/conf/mime.properties
-showVersionNumber         0
+showVersionNumber         1
 adminEmails               root@localhost
 adminRoot                 $SERVER_ROOT/admin/
 
@@ -33,7 +33,8 @@ accesslog $SERVER_ROOT/logs/access.log {
   keepDays                30
   compressArchive         0
 }
-indexFiles                index.html
+
+indexFiles                index.html,index.php
 
 expires  {
   enableExpires           1
