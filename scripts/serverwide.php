@@ -181,7 +181,7 @@ foreach($user_lists as $user) {
 		$domain = trim($domain);
 		$default_file = file('/usr/local/directadmin/data/users/'.$user.'/domains/'.$domain.'.conf');
 		$ips = array_values(preg_grep('/^ip=/', $default_file));
-		list(, $current_ip) = explode('=', $ips[0]);
+		list(, $ip) = explode('=', $ips[0]);
 		$ssls = array_values(preg_grep('/^ssl=/', $default_file));
 		list(, $ssl) = explode('=', $ssls[0]);
 		$vhosts_list[] = array('u' => $user, 'd' => $domain, 'r' => $domain);
