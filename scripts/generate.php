@@ -113,6 +113,7 @@ rewrite  {
 
 ";
 	@file_put_contents('/usr/local/lsws/conf/vhosts/'.$ext->user.'_'.$ext->domain.'.conf', $write);
+	@system('/bin/chown lsadm:lsadm /usr/local/lsws/conf/vhosts/'.$ext->user.'_'.$ext->domain.'.conf');
 	@system('/etc/init.d/lsws restart');
 	@print('<pre>'.$write.'</pre>');
 }
