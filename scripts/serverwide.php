@@ -1,7 +1,7 @@
 #!/usr/local/bin/php -n
 <?php
-$port_80 = 8088;
-$port_443 = 8089;
+$port_80 = 80;
+$port_443 = 443;
 $listener_binding = '4';
 
 $lsws_config_file = '#
