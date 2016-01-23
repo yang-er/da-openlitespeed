@@ -4,19 +4,19 @@ $all = @file_get_contents("/usr/local/directadmin/data/plugin_data/admin.json");
 $data = @json_decode($all);
 if(!$data) die('He He');
 foreach($data as $domain => $ext) {
-	$write = <<<EOF
+	$write = "
 docRoot                   \$VH_ROOT/public_html
-adminEmails               {$ext[ServerAdmin]}
-enableGzip                1
-enableIpGeo               0
+adminEmails               ".$ext['ServerAdmin']."
+enableGzip                ".($ext['enableGZIP']?1:0)."
+enableIpGeo               ".($ext['enableGeoIP']?1:0)."
 
-errorlog /var/log/httpd/domains/|DOMAIN|.error.log {
+errorlog /var/log/httpd/domains/".$domain.".error.log {
   useServer               0
-  logLevel                ERROR
+  logLevel                DEBUG
   rollingSize             256K
 }
 
-accesslog /var/log/httpd/domains/|DOMAIN|.access.log {
+accesslog /var/log/httpd/domains/".$domain.".access.log {
   useServer               0
   logHeaders              7
   rollingSize             1M
@@ -28,42 +28,42 @@ index  {
   useServer               1
   autoIndex               0
 }
-EOF;
+";
 	if($ext['error_400'])
-		$write .= <<<EOF
+		$write .= "
 errorpage 400 {
-  url                     {$ext[error_400]}
+  url                     ".$ext['error_400']."
 }
-EOF;
+";
 	if($ext['error_401'])
-		$write .= <<<EOF
+		$write .= "
 errorpage 401 {
-  url                     {$ext[error_401]}
+  url                     ".$ext['error_401']."
 }
-EOF;
+";
 	if($ext['error_403'])
-		$write .= <<<EOF
+		$write .= "
 errorpage 403 {
-  url                     {$ext[error_403]}
+  url                     ".$ext['error_403']."
 }
-EOF;
+";
 	if($ext['error_404'])
-		$write .= <<<EOF
+		$write .= "
 errorpage 404 {
-  url                     {$ext[error_404]}
+  url                     ".$ext['error_404']."
 }
-EOF;
+";
 	if($ext['error_500'])
-		$write .= <<<EOF
+		$write .= "
 errorpage 500 {
-  url                     {$ext[error_500]}
+  url                     ".$ext['error_500']."
 }
-EOF;
-	$write .= <<<EOF
+";
+	$write .= "
 accessControl  {
   allow                   *
 }
-EOF;
+";
 /*context /|URL| {
   type                    NULL
   location                /|LOCATION|
@@ -103,15 +103,15 @@ EOF;
 }
 */
 	if($ext['rewrite_engine_on'])
-		$write .= <<<EOF
+		$write .= "
 rewrite  {
   enable                  1
   rules                   <<<END_rules
-{$ext[rewrite_config]}
+".$ext['rewrite_config']."
   END_rules
 }
 
-EOF;
+";
 	@file_put_contents('/usr/local/lsws/conf/vhosts/'.$ext['user'].'_'.$ext['domain'].'.conf', $write);
 	@exec('/etc/init.d/lsws restart');
 	@print($write);
