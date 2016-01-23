@@ -175,8 +175,10 @@ if($handle = opendir('/usr/local/directadmin/data/users')) {
 sort($user_lists);
 
 foreach($user_lists as $user) {
+	$user = trim($user);
 	$domains = file('/usr/local/directadmin/data/users/'.$user.'/domains.list');
 	foreach($domains as $domain) {
+		$domain = trim($domain);
 		$default_file = file('/usr/local/directadmin/data/users/'.$user.'/domains/'.$domain.'.conf');
 		$ips = array_values(preg_grep('/^ip=/', $default_file));
 		list(, $current_ip) = explode('=', $ips[0]);
