@@ -183,8 +183,8 @@ foreach($user_lists as $user) {
 		$ssls = array_values(preg_grep('/^ssl=/', $default_file));
 		list(, $ssl) = explode('=', $ssls[0]);
 		$vhosts_list[] = array('u' => $user, 'd' => $domain, 'r' => $domain);
-		$listener_list["{$ip}:{$port_80}"] = $domain;
-		if($ssl == 'ON') $listener_list["{$ip}:{$port_443}"] = $domain;
+		$listener_list["{$ip}:{$port_80}"][] = $domain;
+		if($ssl == 'ON') $listener_list["{$ip}:{$port_443}"][] = $domain;
 
 		$pointer_file_addr = '/usr/local/directadmin/data/users/'.$user.'/domains/'.$domain.'.pointers';
 		if((file_exists($pointer_file_addr) && filesize($pointer_file_addr) != 0)) {
@@ -193,7 +193,7 @@ foreach($user_lists as $user) {
 				list($pointed_domain, ) = explode('=alias', $line);
 				$pointed_domain = trim($pointed_domain);
 				$vhosts_list[] = array('u' => $user, 'd' => $domain, 'r' => $pointed_domain);
-				$listener_list["{$ip}:{$port_80}"] = $pointed_domain;
+				$listener_list["{$ip}:{$port_80}"][] = $pointed_domain;
 			}
 		}
 
@@ -202,8 +202,8 @@ foreach($user_lists as $user) {
 			foreach($sub_file as $subdomain) {
 				$subdomain = trim($subdomain).'.'.$domain;
 				$vhosts_list[] = array('u' => $user, 'd' => $domain, 'r' => $subdomain);
-				$listener_list["{$ip}:{$port_80}"] = $subdomain;
-				if($ssl == 'ON') $listener_list["{$ip}:{$port_443}"] = $subdomain;
+				$listener_list["{$ip}:{$port_80}"][] = $subdomain;
+				if($ssl == 'ON') $listener_list["{$ip}:{$port_443}"][] = $subdomain;
 			}
 		}
 	}
