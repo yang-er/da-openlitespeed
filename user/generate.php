@@ -113,6 +113,6 @@ rewrite  {
 
 ";
 	@file_put_contents('/usr/local/lsws/conf/vhosts/'.$ext->user.'_'.$ext->domain.'.conf', $write);
-	@exec('/etc/init.d/lsws restart');
-	@print($write);
+	@system('/etc/init.d/lsws restart');
+	@print('<pre>'.$write.'</pre>');
 }
