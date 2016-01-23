@@ -199,6 +199,7 @@ foreach($user_lists as $user) {
 				$pointed_domain = trim($pointed_domain);
 				$vhosts_list[] = array('u' => $user, 'd' => $domain, 'r' => $pointed_domain);
 				$listener_list["{$ip}:{$port_80}"][] = $pointed_domain;
+				if($ssl == 'ON') $listener_list["{$ip}:{$port_443}"][] = $pointed_domain;
 			}
 		}
 
@@ -286,7 +287,6 @@ vhTemplate EasyRailsWithSuEXEC {
 }
 ';
 
-@file_put_contents('/usr/local/lsws/conf/httpd_config2.conf', $lsws_config_file);
-@system('/bin/chown lsadm:lsadm /usr/local/lsws/conf/httpd_config2.conf');
-//@system('/etc/init.d/lsws restart');
-@print('<pre>'.$lsws_config_file.'</pre>');
+@file_put_contents('/usr/local/lsws/conf/httpd_config.conf', $lsws_config_file);
+@system('/bin/chown lsadm:lsadm /usr/local/lsws/conf/httpd_config.conf');
+@system('/etc/init.d/lsws restart');
