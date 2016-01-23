@@ -182,8 +182,10 @@ foreach($user_lists as $user) {
 		$default_file = file('/usr/local/directadmin/data/users/'.$user.'/domains/'.$domain.'.conf');
 		$ips = array_values(preg_grep('/^ip=/', $default_file));
 		list(, $ip) = explode('=', $ips[0]);
+		$ip = trim($ip);
 		$ssls = array_values(preg_grep('/^ssl=/', $default_file));
 		list(, $ssl) = explode('=', $ssls[0]);
+		$ssl = trim($ssl);
 		$vhosts_list[] = array('u' => $user, 'd' => $domain, 'r' => $domain);
 		$listener_list["{$ip}:{$port_80}"][] = $domain;
 		if($ssl == 'ON') $listener_list["{$ip}:{$port_443}"][] = $domain;
