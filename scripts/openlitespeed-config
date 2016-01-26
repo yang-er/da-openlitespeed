@@ -3,7 +3,7 @@
 
 define('DABASEDIR', '/usr/local/directadmin/data/users/');
 
-if($_SERVER['argc'] < 1) {
+if($_SERVER['argc'] < 2) {
 	echo <<<EOF
 Usage:  openlitespeed-config v0.1
 
@@ -18,8 +18,11 @@ lsws_restart                   - gracefully restart web server
 
 Welcome to <https://github.com/yang-er/da-openlitespeed>!
 
+
 EOF;
-} elseif($_SERVER['argv'][1] == 'vh_rewrite') {
+}
+
+elseif($_SERVER['argv'][1] == 'vh_rewrite') {
 	$uList = array();
 	$handle = opendir(DABASEDIR);
 	while(false !== ($file = readdir($handle)))
@@ -50,7 +53,9 @@ EOF;
 			}
 		}
 	}
-} elseif($_SERVER['argv'][1] == 'user_rewrite') {
+}
+
+elseif($_SERVER['argv'][1] == 'user_rewrite') {
 	list(, , $user) = $_SERVER['argv'];
 	$domains = file(DABASEDIR.$user.'/domains.list');
 	$uConF = @file_get_contents("/usr/local/directadmin/data/plugin_data/{$user}.json");
@@ -73,62 +78,313 @@ EOF;
 			}
 		}
 	}
-} elseif($_SERVER['argv'][1] == 'ws_rewrite') {
-	$port_80 = 8088;
-	$port_443 = 8089;
-	$lrList = array();
-	$vhList = array();
-	$uList = array();
-	$handle = opendir(DABASEDIR);
-	while(false !== ($file = readdir($handle)))
-		if($file != '.' && $file != '..')
-			$uList[] = $file;
-	closedir($handle);
-	sort($uList);
-	foreach($uList as $user) {
-		$domains = file(DABASEDIR.$user.'/domains.list');
-		foreach($domains as $domain) {
-			$domain = trim($domain);
-			$defFile = file(DABASEDIR.$user.'/domains/'.$domain.'.conf');
-			$conf = array();
-			foreach($defFile as $oneLine) {
-				list($item, $value) = explode('=', $oneLine);
-				$conf[trim($item)] = trim($value);
-			}
-			$vhList[] = writeVh($user, $domain, null, $conf['php']);
-			$mapped = array($domain);
-			$pfileAddr = DABASEDIR.$user.'/domains/'.$domain.'.pointers';
-			if((file_exists($pfileAddr) && filesize($pfileAddr) != 0)) {
-				$pf = file($pfileAddr);
-				foreach($pf as $line) {
-					list($pd, ) = explode('=', $line);
-					$mapped[] = trim($pd);
-				}
-			}
-			$l80 = "{$conf[ip]}:{$port_80}";
-			$l443 = "{$conf[ip]}:{$port_443}";
-			$lrList[$l80][] = makeMap($domain, $mapped);
-			if($conf['ssl'] == 'ON') $lrList[$l443][] = makeMap($domain, $mapped);
-			$sfileAddr = DABASEDIR.$user.'/domains/'.$domain.'.subdomains';
-			if((file_exists($sfileAddr) && $sf = file($sfileAddr))) {
-				foreach($sf as $subd) {
-					$sub = trim($subd).'.'.$domain;
-					$vhList[] = writeVh($user, $domain, $sub, $conf['php']);
-					$lrList[$l80][] = makeMap($sub, $sub);
-					if($conf['ssl'] == 'ON') $lrList[$l443][] = makeMap($sub, $sub);
-				}
-			}
+}
+
+elseif($_SERVER['argv'][1] == 'ws_rewrite') {
+
+$port_80 = 8088;
+$port_443 = 8089;
+$adminEmails = 'i@yang-er.com';
+$lsphp = 'lsphp5';
+$lsws = array(
+  'serverName' => 'lshttpd',
+  'user' => 'apache',
+  'group' => 'apache',
+  'priority' => '0',
+  'inMemBufSize' => '60M',
+  'swappingDir' => '/tmp/lshttpd/swap',
+  'autoFix503' => '1',
+  'gracefulRestartTimeout' => '300',
+  'mime' => '$SERVER_ROOT/conf/mime.properties',
+  'showVersionNumber' => '1',
+  'adminEmails' => $adminEmails,
+  'adminRoot' => '$SERVER_ROOT/admin/',
+  'errorlog' => array(
+    '$SERVER_ROOT/logs/error.log' => array(
+      'logLevel' => 'DEBUG',
+      'debugLevel' => '0',
+      'rollingSize' => '10M',
+      'enableStderrLog' => '1'
+    )
+  ),
+  'accesslog' => array(
+    '$SERVER_ROOT/logs/access.log' => array(
+      'rollingSize' => '10M',
+      'keepDays' => '30',
+      'compressArchive' => '0'
+    )
+  ),
+  'indexFiles' => 'index.html,index.php',
+  'expires' => array(
+    array(
+      'enableExpires' => '1',
+      'expiresByType' => 'image/*=A604800, text/css=A604800, application/x-javascript=A604800'
+    )
+  ),
+  'tuning' => array(
+    array(
+      'eventDispatcher' => 'best',
+      'maxConnections' => '2000',
+      'maxSSLConnections' => '1000',
+      'connTimeout' => '300',
+      'maxKeepAliveReq' => '1000',
+      'smartKeepAlive' => '0',
+      'keepAliveTimeout' => '5',
+      'sndBufSize' => '0',
+      'rcvBufSize' => '0',
+      'maxReqURLLen' => '8192',
+      'maxReqHeaderSize' => '16380',
+      'maxReqBodySize' => '2047M',
+      'maxDynRespHeaderSize' => '8192',
+      'maxDynRespSize' => '2047M',
+      'maxCachedFileSize' => '4096',
+      'totalInMemCacheSize' => '20M',
+      'maxMMapFileSize' => '256K',
+      'totalMMapCacheSize' => '40M',
+      'useSendfile' => '1',
+      'fileETag' => '28',
+      'enableGzipCompress' => '1',
+      'enableDynGzipCompress' => '1',
+      'gzipCompressLevel' => '6',
+      'compressibleTypes' => 'text/*,application/x-javascript,application/javascript,application/xml, image/svg+xml',
+      'gzipAutoUpdateStatic' => '1',
+      'gzipStaticCompressLevel' => '6',
+      'gzipMaxFileSize' => '1M',
+      'gzipMinFileSize' => '300',
+      'SSLCryptoDevice' => 'null'
+    )
+  ),
+  'fileAccessControl' => array(
+    array(
+      'followSymbolLink' => '1',
+      'checkSymbolLink' => '0',
+      'requiredPermissionMask' => '000',
+      'restrictedPermissionMask' => '000'
+    )
+  ),
+  'perClientConnLimit' => array(
+    array(
+      'staticReqPerSec' => '0',
+      'dynReqPerSec' => '0',
+      'outBandwidth' => '0',
+      'inBandwidth' => '0',
+      'softLimit' => '10000',
+      'hardLimit' => '10000',
+      'gracePeriod' => '15',
+      'banPeriod' => '300'
+    )
+  ),
+  'CGIRLimit' => array(
+    array(
+      'maxCGIInstances' => '20',
+      'minUID' => '11',
+      'minGID' => '10',
+      'priority' => '0',
+      'CPUSoftLimit' => '10',
+      'CPUHardLimit' => '50',
+      'memSoftLimit' => '460M',
+      'memHardLimit' => '470M',
+      'procSoftLimit' => '400',
+      'procHardLimit' => '450'
+    )
+  ),
+  'accessDenyDir' => array(
+    array(
+      'dir' => array(
+        '/etc/*',
+        '/dev/*',
+        '$SERVER_ROOT/conf/*',
+        '$SERVER_ROOT/admin/conf/*'
+      )
+    )
+  ),
+  'accessControl' => array(
+    array(
+      'allow' => 'ALL'
+    )
+  ),
+  'extprocessor' => array(
+    $lsphp => array(
+      'type' => 'lsapi',
+      'address' => 'uds://tmp/lshttpd/lsphp.sock',
+      'maxConns' => '35',
+      'env' => array(
+        'PHP_LSAPI_MAX_REQUESTS=500',
+        'PHP_LSAPI_CHILDREN=35'
+      ),
+      'initTimeout' => '60',
+      'retryTimeout' => '0',
+      'persistConn' => '1',
+      'respBuffer' => '0',
+      'autoStart' => '1',
+      'path' => '$SERVER_ROOT/fcgi-bin/'.$lsphp,
+      'backlog' => '100',
+      'instances' => '1',
+      'priority' => '0',
+      'memSoftLimit' => '2047M',
+      'memHardLimit' => '2047M',
+      'procSoftLimit' => '400',
+      'procHardLimit' => '500'
+    )
+  ),
+  'scripthandler' => array(
+    array(
+      'add' => 'lsapi:'.$lsphp.' php'
+    )
+  ),
+  'railsDefaults' => array(
+    array(
+      'railsEnv' => '1',
+      'maxConns' => '5',
+      'env' => array(
+        'LSAPI_MAX_REQS=1000',
+        'LSAPI_MAX_IDLE=60'
+      ),
+      'initTimeout' => '60',
+      'retryTimeout' => '0',
+      'pcKeepAliveTimeout' => '60',
+      'respBuffer' => '0',
+      'backlog' => '50',
+      'runOnStartUp' => '1',
+      'extMaxIdleTime' => '300',
+      'priority' => '3',
+      'memSoftLimit' => '2047M',
+      'memHardLimit' => '2047M',
+      'procSoftLimit' => '500',
+      'procHardLimit' => '600'
+    )
+  ),
+  'virtualhost' => array(
+    'Default' => array(
+      'vhRoot' => '/var/www/',
+      'configFile' => '$SERVER_ROOT/conf/vhosts/Default.conf',
+      'allowSymbolLink' => '1',
+      'enableScript' => '1',
+      'restrained' => '1',
+      'smartKeepAlive' => '1',
+      'setUIDMode' => '2'
+    )
+  ),
+  'listener' => array(
+  ),
+  'vhTemplate' => array(
+    'centralConfigLog' => array(
+      'templateFile' => '$SERVER_ROOT/conf/templates/ccl.conf',
+      'listeners' => ''
+    ),
+    'PHP_SuEXEC' => array(
+      'templateFile' => '$SERVER_ROOT/conf/templates/phpsuexec.conf',
+      'listeners' => ''
+    ),
+    'EasyRailsWithSuEXEC' => array(
+      'templateFile' => '$SERVER_ROOT/conf/templates/rails.conf',
+      'listeners' => ''
+    )
+  )
+);
+
+$ipList = file(DABASEDIR.'../admin/ip.list');
+foreach($ipList as $ip) {
+	$ip = trim($ip);
+	$lsws['listener']["{$ip}:{$port_80}"] = array(
+		'address' => "{$ip}:{$port_80}",
+		'binding' => '4',
+		'secure' => '0',
+		'map' => array('Default *')
+	);
+	$lsws['listener']["{$ip}:{$port_443}"] = array(
+		'address' => "{$ip}:{$port_443}",
+		'binding' => '4',
+		'secure' => '1',
+		'keyFile' => '/etc/httpd/conf/ssl.key/server.key',
+		'certFile' => '/etc/httpd/conf/ssl.crt/server.crt',
+		'CACertFile' => '/etc/httpd/conf/ssl.crt/server.ca',
+		'map' => array('Default *')
+	);
+}
+
+$listeners = implode(',', array_keys($lsws['listener']));
+$lsws['vhTemplate']['centralConfigLog']['listeners'] = $listeners;
+$lsws['vhTemplate']['PHP_SuEXEC']['listeners'] = $listeners;
+$lsws['vhTemplate']['EasyRailsWithSuEXEC']['listeners'] = $listeners;
+
+$lrList = array();
+$uList = array();
+$handle = opendir(DABASEDIR);
+while(false !== ($file = readdir($handle))) if($file != '.' && $file != '..') $uList[] = $file;
+closedir($handle);
+sort($uList);
+
+foreach($uList as $user) {
+$domains = file(DABASEDIR.$user.'/domains.list');
+foreach($domains as $domain) {
+
+	$domain = trim($domain);
+	$defFile = file(DABASEDIR.$user.'/domains/'.$domain.'.conf');
+	$conf = array();
+	foreach($defFile as $oneLine) {
+		list($item, $value) = explode('=', $oneLine);
+		$conf[trim($item)] = trim($value);
+	}
+
+	$lsws['virtualhost'][$domain] = array(
+		'vhRoot' => '/home/'.$user.'/domains/'.$domain.'/',
+		'configFile' => '$SERVER_ROOT/conf/vhosts/'.$user.'_'.$domain.'.conf',
+		'allowSymbolLink' => '1',
+		'enableScript' => $conf['php'] == 'ON' ? '1' : '0',
+		'restrained' => '1',
+		'smartKeepAlive' => '1',
+		'setUIDMode' => '2'
+	);
+
+	$mapped = array($domain);
+	$pfileAddr = DABASEDIR.$user.'/domains/'.$domain.'.pointers';
+	if((file_exists($pfileAddr) && filesize($pfileAddr) != 0)) {
+		$pf = file($pfileAddr);
+		foreach($pf as $line) {
+			list($pd, ) = explode('=', $line);
+			if($_SERVER['argv'][2] == 'poi-' && $_SERVER['argv'][3] == $domain && trim($pd) == $_SERVER['argv'][4]) continue;
+			$mapped[] = trim($pd);
 		}
 	}
 
-	$olsConf  = writeHead('i@yang-er.com');
-	$olsConf .= implode("", $vhList);
-	$olsConf .= writeDef();
-	foreach($lrList as $listener => $domain)
-		$olsConf .= writeL($listener, $domain);
-	$olsConf .= writeVhT($lrList);
-	@file_put_contents('/usr/local/lsws/conf/httpd_config.conf', $olsConf);
-} elseif($_SERVER['argv'][1] == 'add_domain') {
+	if ($_SERVER['argv'][2] == 'poi+' && $_SERVER['argv'][3] == $domain) {
+		$mapped[] = trim($_SERVER['argv'][4]);
+	}
+
+	$l80 = "{$conf[ip]}:{$port_80}";
+	$l443 = "{$conf[ip]}:{$port_443}";
+	$lsws['listener'][$l80]['map'][] = $domain.' '.implode(',', $mapped);
+	if($conf['ssl'] == 'ON') $lsws['listener'][$l443]['map'][] = $domain.' '.implode(',', $mapped);
+
+	$sfileAddr = DABASEDIR.$user.'/domains/'.$domain.'.subdomains';
+	if((file_exists($sfileAddr) && $sf = file($sfileAddr))) {
+		if($_SERVER['argv'][2] == 'sub+' && $_SERVER['argv'][3] == $domain) $sf[] = $_SERVER['argv'][4];
+		foreach($sf as $subd) {
+			$sub = trim($subd).'.'.$domain;
+			if($_SERVER['argv'][2] == 'sub-' && $_SERVER['argv'][3] == $domain && trim($subd) == $_SERVER['argv'][4]) continue;
+			$lsws['virtualhost'][$sub] = array(
+				'vhRoot' => '/home/'.$user.'/domains/'.$domain.'/',
+				'configFile' => '$SERVER_ROOT/conf/vhosts/'.$user.'_'.$sub.'.conf',
+				'allowSymbolLink' => '1',
+				'enableScript' => $conf['php'] == 'ON' ? '1' : '0',
+				'restrained' => '1',
+				'smartKeepAlive' => '1',
+				'setUIDMode' => '2'
+			);
+			$lsws['listener'][$l80]['map'][] = $sub.' '.$sub;
+			if($conf['ssl'] == 'ON') $lsws['listener'][$l443]['map'][] = $sub.' '.$sub;
+		}
+	}
+}
+}
+
+$olsConf = formatA($lsws);
+@file_put_contents('/usr/local/lsws/conf/httpd_config.conf', $olsConf);
+
+}
+
+elseif($_SERVER['argv'][1] == 'add_domain') {
 	list(, , $user, $domain2) = $_SERVER['argv'];
 	$domains = file(DABASEDIR.$user.'/domains.list');
 	$uConF = @file_get_contents("/usr/local/directadmin/data/plugin_data/{$user}.json");
@@ -153,7 +409,9 @@ EOF;
 		}
 		break;
 	}
-} elseif($_SERVER['argv'][1] == 'drop_domain') {
+}
+
+elseif($_SERVER['argv'][1] == 'drop_domain') {
 	list(, , $user, $domain) = $_SERVER['argv'];
 	@unlink("/usr/local/lsws/conf/vhosts/{$user}_{$domain}.conf");
 	$sfileAddr = DABASEDIR.$user.'/domains/'.$domain.'.subdomains';
@@ -163,7 +421,9 @@ EOF;
 			@unlink("/usr/local/lsws/conf/vhosts/{$user}_{$sub}.conf");
 		}
 	}
-} elseif($_SERVER['argv'][1] == 'add_sub') {
+}
+
+elseif($_SERVER['argv'][1] == 'add_sub') {
 	list(, , $user, $domain, $subdomain) = $_SERVER['argv'];
 	$defFile = file(DABASEDIR.$user.'/domains/'.$domain.'.conf');
 	$conf = array();
@@ -173,14 +433,20 @@ EOF;
 	}
 	$sub = trim($subdomain).'.'.$domain;
 	writeConf($sub, $conf);
-} elseif($_SERVER['argv'][1] == 'drop_sub') {
+}
+
+elseif($_SERVER['argv'][1] == 'drop_sub') {
 	list(, , $user, $domain, $subdomain) = $_SERVER['argv'];
 	$sub = trim($subdomain).'.'.trim($domain);
 	@unlink("/usr/local/lsws/conf/vhosts/{$user}_{$sub}.conf");
-} elseif($_SERVER['argv'][1] == 'lsws_restart') {
+}
+
+elseif($_SERVER['argv'][1] == 'lsws_restart') {
 	@system('/bin/chown lsadm:lsadm /usr/local/lsws/conf -R');
 	@system('/etc/init.d/lsws restart');
-} else {
+}
+
+else {
 	exit();
 }
 
@@ -249,268 +515,4 @@ function formatB($name, $data, $level = 0) {
 	}
 
 	return $return;
-}
-
-function makeMap($domain, $domains) {
-	return $domain.' '.(is_array($domains) ? implode(',', $domains) : $domains);
-}
-
-function writeHead($adminEmails = 'root@localhost', $lsphp = 'lsphp5') {
-	return <<<EOF
-#
-# PLAIN TEXT CONFIGURATION FILE WRITTEN BY DA-OLS
-#
-
-serverName                lshttpd
-user                      apache
-group                     apache
-priority                  0
-inMemBufSize              60M
-swappingDir               /tmp/lshttpd/swap
-autoFix503                1
-gracefulRestartTimeout    300
-mime                      \$SERVER_ROOT/conf/mime.properties
-showVersionNumber         1
-adminEmails               {$adminEmails}
-adminRoot                 \$SERVER_ROOT/admin/
-
-errorlog \$SERVER_ROOT/logs/error.log {
-  logLevel                DEBUG
-  debugLevel              0
-  rollingSize             10M
-  enableStderrLog         1
-}
-
-accesslog \$SERVER_ROOT/logs/access.log {
-  rollingSize             10M
-  keepDays                30
-  compressArchive         0
-}
-
-indexFiles                index.html,index.php
-
-expires  {
-  enableExpires           1
-  expiresByType           image/*=A604800, text/css=A604800, application/x-javascript=A604800
-}
-
-tuning  {
-  eventDispatcher         best
-  maxConnections          2000
-  maxSSLConnections       1000
-  connTimeout             300
-  maxKeepAliveReq         1000
-  smartKeepAlive          0
-  keepAliveTimeout        5
-  sndBufSize              0
-  rcvBufSize              0
-  maxReqURLLen            8192
-  maxReqHeaderSize        16380
-  maxReqBodySize          2047M
-  maxDynRespHeaderSize    8192
-  maxDynRespSize          2047M
-  maxCachedFileSize       4096
-  totalInMemCacheSize     20M
-  maxMMapFileSize         256K
-  totalMMapCacheSize      40M
-  useSendfile             1
-  fileETag                28
-  enableGzipCompress      1
-  enableDynGzipCompress   1
-  gzipCompressLevel       6
-  compressibleTypes       text/*,application/x-javascript,application/javascript,application/xml, image/svg+xml
-  gzipAutoUpdateStatic    1
-  gzipStaticCompressLevel 6
-  gzipMaxFileSize         1M
-  gzipMinFileSize         300
-  SSLCryptoDevice         null
-}
-
-fileAccessControl  {
-  followSymbolLink        1
-  checkSymbolLink         0
-  requiredPermissionMask  000
-  restrictedPermissionMask 000
-}
-
-perClientConnLimit  {
-  staticReqPerSec         0
-  dynReqPerSec            0
-  outBandwidth            0
-  inBandwidth             0
-  softLimit               10000
-  hardLimit               10000
-  gracePeriod             15
-  banPeriod               300
-}
-
-CGIRLimit  {
-  maxCGIInstances         20
-  minUID                  11
-  minGID                  10
-  priority                0
-  CPUSoftLimit            10
-  CPUHardLimit            50
-  memSoftLimit            460M
-  memHardLimit            470M
-  procSoftLimit           400
-  procHardLimit           450
-}
-
-accessDenyDir  {
-  dir                     /etc/*
-  dir                     /dev/*
-  dir                     \$SERVER_ROOT/conf/*
-  dir                     \$SERVER_ROOT/admin/conf/*
-}
-
-accessControl  {
-  allow                   ALL
-}
-
-extprocessor {$lsphp} {
-  type                    lsapi
-  address                 uds://tmp/lshttpd/lsphp.sock
-  maxConns                35
-  env                     PHP_LSAPI_MAX_REQUESTS=500
-  env                     PHP_LSAPI_CHILDREN=35
-  initTimeout             60
-  retryTimeout            0
-  persistConn             1
-  respBuffer              0
-  autoStart               1
-  path                    \$SERVER_ROOT/fcgi-bin/{$lsphp}
-  backlog                 100
-  instances               1
-  priority                0
-  memSoftLimit            2047M
-  memHardLimit            2047M
-  procSoftLimit           400
-  procHardLimit           500
-}
-
-scripthandler  {
-  add                     lsapi:{$lsphp} php
-}
-
-railsDefaults  {
-  railsEnv                1
-  maxConns                5
-  env                     LSAPI_MAX_REQS=1000
-  env                     LSAPI_MAX_IDLE=60
-  initTimeout             60
-  retryTimeout            0
-  pcKeepAliveTimeout      60
-  respBuffer              0
-  backlog                 50
-  runOnStartUp            1
-  extMaxIdleTime          300
-  priority                3
-  memSoftLimit            2047M
-  memHardLimit            2047M
-  procSoftLimit           500
-  procHardLimit           600
-}
-
-EOF;
-}
-
-function writeVh($user, $domain, $real, $script) {
-	if(is_null($real)) $real = $domain;
-	$script_load = ($script == 'ON' ? '1' : '0');
-	return <<<EOF
-
-virtualhost {$real} {
-  vhRoot                  /home/{$user}/domains/{$domain}/
-  configFile              \$SERVER_ROOT/conf/vhosts/{$user}_{$real}.conf
-  allowSymbolLink         1
-  enableScript            {$script_load}
-  restrained              1
-  smartKeepAlive          1
-  setUIDMode              2
-}
-
-EOF;
-}
-
-function writeDef() {
-	global $port_443, $port_80;
-
-	return <<<EOF
-
-virtualhost Default {
-  vhRoot                  /var/www/
-  configFile              \$SERVER_ROOT/conf/vhosts/Default.conf
-  allowSymbolLink         1
-  enableScript            1
-  restrained              1
-  smartKeepAlive          1
-  setUIDMode              2
-}
-
-EOF;
-}
-
-function writeL($listener, $domain) {
-	global $port_443, $port_80;
-
-	list($ip, $port) = explode(':', $listener);
-	$ssl_on = ($port == $port_443);
-	sort($domain);
-	$map = array();
-	foreach($domain as $ab)
-		$map[] = '  map                     '.$ab;
-	$maps = implode("\n", $map);
-
-	if($ssl_on) {
-		return <<<EOF
-
-listener {$ip}:{$port_443} {
-  address                 {$ip}:{$port_443}
-  binding                 4
-  secure                  1
-  keyFile                 /etc/httpd/conf/ssl.key/server.key
-  certFile                /etc/httpd/conf/ssl.crt/server.crt
-  CACertFile              /etc/httpd/conf/ssl.crt/server.ca
-  map                     Default *
-{$maps}
-}
-
-EOF;
-	} else {
-		return <<<EOF
-
-listener {$ip}:{$port_80} {
-  address                 {$ip}:{$port_80}
-  binding                 4
-  secure                  0
-  map                     Default *
-{$maps}
-}
-
-EOF;
-	}
-}
-
-function writeVhT($listener) {
-	$array = array_keys($listener);
-	$listeners = implode(',', $array);
-	return <<<EOF
-
-vhTemplate centralConfigLog {
-  templateFile            \$SERVER_ROOT/conf/templates/ccl.conf
-  listeners               {$listeners}
-}
-
-vhTemplate PHP_SuEXEC {
-  templateFile            \$SERVER_ROOT/conf/templates/phpsuexec.conf
-  listeners               {$listeners}
-}
-
-vhTemplate EasyRailsWithSuEXEC {
-  templateFile            \$SERVER_ROOT/conf/templates/rails.conf
-  listeners               {$listeners}
-}
-
-EOF;
 }

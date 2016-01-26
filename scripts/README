@@ -1,0 +1,225 @@
+**********
+
+The contents of this file will map what script names will be associated with what commands.
+Several scripts exist that are not mentioned here.  Check:
+http://www.directadmin.com/versions.php
+Search for the keyword you're looking for plus pre.sh or post.sh
+
+**********
+
+
+##########################################
+
+domain_create_pre.sh		- Runs BEFORE a domain is created
+domain_create_post.sh		- Runs AFTER a domain is created
+domain_destroy_pre.sh           - Runs BEFORE a domain is destroyed
+domain_destroy_post.sh          - Runs AFTER a domain is destroyed
+
+environmental variables:
+bandwidth=# or unlimited
+cgi=ON or OFF
+defaultdomain=yes or no
+domain=domain.com
+ssl=ON or OFF
+suspended=yes or no
+username=ownerofdomain
+
+##########################################
+
+domain_change_pre.sh		- Runs BEFORE a domain is renamed.  A non-zero value will abort the change.
+domain_change_post.sh		- Runs AFTER a domain is renamed.
+
+environmental vars: http://www.directadmin.com/features.php?id=448
+
+##########################################
+
+subdomain_create_pre.sh		- Runs BEFORE a subdomain is created, but after it's confirmed.
+				  If this script returns a non-zero value, the creation is aborted.
+subdomain_create_post.sh	- Runs AFTER the subdomain is created.
+subdomain_destroy_pre.sh	- Runs BEFORE a subdomain is destroyed.  If this script returns
+				  a non-zero value, the destruction is aborted
+subdomain_destroy_post.sh	- Runs AFTER the subdomain is destroyed.
+
+environmental variables:
+username=ownerofdomain
+domain=domain.com
+subdomain=sub
+contents=1 or 0			- only for destroy.  Specifies that the directory and contents are being removed.
+
+##########################################
+
+user_create_pre.sh		- Runs BEFORE the user is created, but after it's confirmed. 
+				  If this script returns anything but zero, the creation is aborted
+user_create_post.sh		- Runs AFTER the user is created.
+user_destroy_pre.sh		- Runs BEFORE the use is destroyed.  If this script returns anything
+				  but zero, the destruction is aborted.
+user_destroy_post.sh		- Runs AFTER the user is destroyed.
+user_modify_post.sh		- Runs AFTER the user is modified.
+
+environmental variables:
+account=ON or OFF
+aftp=ON or OFF
+bandwidth=# or unlimited
+cgi=ON or OFF
+creator=username
+dnscontrol=ON or OFF
+docsroot=./data/skins/default (relative path to document root)
+domain=domain.com
+domainptr=# or unlimited
+email=email@domain.com
+ftp=# or unlimited
+ip=1.2.3.4
+mysql=# or unlimited
+nemailf=# or unlimited
+nemailml=# or unlimited
+nemailr=# or unlimited
+nemails=# or unlimited
+ns1=ns1.domain.com
+ns2=ns2.domain.com
+nsubdomains=# or unlimited
+package=packagename
+passwd=the password entered
+quota=# or unlimited
+sentwarning=no (refers to resource usage limits notification emails)
+skin=default (name of skin)
+ssh=ON or OFF
+ssl=ON or OFF
+suspend_at_limit=ON or OFF
+suspended=no
+username=username
+usertype=user or reseller or admin
+vdomains=# or unlimited
+zoom=100 (completely useless value token for the css zoom feature)
+
+##########################################
+
+email_create_pre.sh 	- Runs BEFORE the virtual email is created, but after it's confirmed.
+                          If this script returns anything but zero, the creation is aborted
+email_create_post.sh	- Runs AFTER the email is created
+
+environment values:
+user=bob
+domain=domain.com
+passwd=secret
+passwd2=secret
+username=username
+quota=#
+
+##########################################
+
+email_destroy_pre.sh	- Runs AFTER virtual email account is deleted.
+
+environement values:
+user=bob
+domain=domain.com
+username=username
+
+##########################################
+
+email_change_pre_post.sh	- Runs BEFORE a virtual pop account password is changed.
+				  If this script returns anything but zero, the change is aborted.
+email_change_pass_post.sh	- Runs AFTER a virtual pop account password is changed.
+
+#username and quota are not passed if the password change is done using "/CMD_CHANGE_EMAIL_PASSWORD"
+
+environmental values:
+user=bob
+domain=domain.com
+passwd=newsecret
+
+username=username
+quota=#
+
+##########################################
+
+dns_write_post.sh		- Runs AFTER a dns zone is written (/var/named/domain.com.db)
+
+environmental values:
+A : list of a records
+CNAME : list of cname records
+MX : list of mx records
+NS : list of ns records
+PTR : list of ptr records
+SERIAL : the serial used in the zone
+EMAIL : authoritative email
+NS1 : authoritative ns zone.
+DOMAIN : domain name of the zone
+SERVER_IP : server IP
+A_TIME : ttl for A records
+CNAME_TIE : ttl for CNAME records
+NS_TIME : ttl for NS records
+PTR_TIME : ttl for PTR records
+see http://www.directadmin.com/features.php?id=450 for more info
+
+##########################################
+
+database_create_post.sh
+database_user_create_post.sh
+
+environmental variables for both scripts:
+
+username - DA username
+database - name of the db
+user - name of the user created
+passwd - password used.  
+
+Note that database_create_user_post.sh will not be called when a database and it's user is being created.
+This means that any code used in database_user_create_post.sh will have to be doubled in
+database_create_post.sh as well for anything you want done to a new user.
+
+##########################################
+
+domain_pointer_create_pre.sh
+domain_pointer_create_post.sh
+
+environmental variables:
+username
+domain
+from=domainpointer.com
+ip=1.2.3.4
+ns1=ns1.ns.com
+ns2=ns2.ns.com
+alias=yes or non-existant (checkbox)
+
+
+domain_pointer_destroy_pre.sh
+domain_pointer_destroy_post.sh
+
+environmental variables:
+username
+domain=domain.com
+from=dominpointer.com
+
+
+
+
+
+
+##########################################
+
+If you need to execute code a few seconds after the sh script it call
+this code is a basic example on how to throw the script into the background
+The foreground instance of it will close all file descriptors, then call
+the background function, then exit. Becuase of the & character, the
+background function is put in the background and runs until it's done.
+Thanks to Alex for this find.
+
+==================================
+#!/bin/bash
+
+function back(){
+    sleep 5
+    echo $0 `date` background  >/tmp/da_scripts
+}
+
+echo $0 `date` start >/tmp/da_scripts
+
+#closing all FDs
+exec 0>&-
+#this is important
+exec 1>&-
+exec 4>&-
+
+back &
+exit 0
+==================================
