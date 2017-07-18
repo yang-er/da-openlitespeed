@@ -42,7 +42,7 @@ elseif($_SERVER['argv'][1] == 'user_rewrite') {
 }
 
 elseif($_SERVER['argv'][1] == 'ws_rewrite') {
-	$lsws_header = @file_get_contents('/usr/local/directadmin/plugins/da-openlitespeed/config/diradmin_Default.conf');
+	$lsws_header = @file_get_contents('/usr/local/directadmin/plugins/da-openlitespeed/configure/diradmin_Default.conf');
 	$lsws = array(
 		'virtualhost' => array(
 			'Default' => array(
@@ -204,7 +204,7 @@ else {
 }
 
 function loadOlsUserConfig($user) {
-	$uConF = @file_get_contents("/usr/local/directadmin/plugins/da-openlitespeed/config/{$user}.json");
+	$uConF = @file_get_contents("/usr/local/directadmin/plugins/da-openlitespeed/configure/{$user}.json");
 	if(!$uConF) {
 		return array();
 	} else {
@@ -245,7 +245,7 @@ function loadDomain($domain, $userConf, $user) {
 function loadSubDomain($sub, $domain, $conf, $userConf) {
 	$subdomain = "{$sub}.{$domain}";
 	if(isset($userConf[$subdomain])) $extra_cond = $userConf[$subdomain];
-	writeSubConf($subdomain, $conf, '$VH_ROOT/public_html/'.$sub, $extra_cond);
+	writeConf($subdomain, $conf, '$VH_ROOT/public_html/'.$sub, $extra_cond);
 }
 
 function writeConf($domain, $conf, $docdir, $extra_cond = array()) {
@@ -315,3 +315,5 @@ function formatB($name, $data, $level = 0) {
 
 	return $return;
 }
+
+
